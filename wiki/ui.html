@@ -2,7 +2,14 @@
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="LLM Wiki">
+  <meta name="theme-color" content="#1a1b26" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f5f5f5" media="(prefers-color-scheme: light)">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icon-192.png">
   <title>LLM Wiki</title>
   <style>
     :root {
@@ -15,6 +22,7 @@
       --text-muted: #565f89;
       --accent: #7aa2f7;
       --accent-hover: #89b4fa;
+      --accent-dim: rgba(122,162,247,0.12);
       --border: #3b4261;
       --success: #9ece6a;
       --warning: #e0af68;
@@ -22,6 +30,10 @@
       --user-bubble: #3b4261;
       --wiki-bubble: #1e2030;
       --shadow: 0 2px 8px rgba(0,0,0,0.3);
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
     }
 
     [data-theme="light"] {
@@ -34,6 +46,7 @@
       --text-muted: #a0aec0;
       --accent: #4a6cf7;
       --accent-hover: #3b5ce5;
+      --accent-dim: rgba(74,108,247,0.08);
       --border: #e2e8f0;
       --success: #48bb78;
       --warning: #ed8936;
@@ -46,13 +59,16 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
       background: var(--bg-primary);
       color: var(--text-primary);
       height: 100vh;
+      height: 100dvh;
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-text-size-adjust: 100%;
     }
 
     /* ── Header ── */
@@ -60,17 +76,19 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 20px;
+      padding: 10px 16px;
+      padding-top: calc(10px + var(--safe-top));
       background: var(--bg-secondary);
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
+      z-index: 10;
     }
 
     .logo {
       display: flex;
       align-items: center;
-      gap: 10px;
-      font-size: 18px;
+      gap: 8px;
+      font-size: 17px;
       font-weight: 700;
       letter-spacing: -0.3px;
     }
@@ -79,49 +97,48 @@
       width: 28px;
       height: 28px;
       background: var(--accent);
-      border-radius: 6px;
+      border-radius: 7px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 14px;
       color: #fff;
+      font-weight: 800;
     }
 
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
 
-    /* ── Tabs ── */
+    /* ── Nav Tabs ── */
     .tab-bar {
       display: flex;
       gap: 2px;
       background: var(--bg-tertiary);
-      border-radius: 8px;
+      border-radius: 10px;
       padding: 3px;
     }
 
     .tab-btn {
-      padding: 6px 16px;
+      padding: 7px 14px;
       border: none;
       background: transparent;
       color: var(--text-muted);
       font-size: 13px;
       font-weight: 600;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
       transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      min-height: 34px;
     }
 
     .tab-btn.active {
       background: var(--bg-secondary);
       color: var(--text-primary);
       box-shadow: var(--shadow);
-    }
-
-    .tab-btn:hover:not(.active) {
-      color: var(--text-secondary);
     }
 
     .theme-toggle {
@@ -139,12 +156,7 @@
       transition: all 0.15s;
     }
 
-    .theme-toggle:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
-    /* ── Main content ── */
+    /* ── Panels ── */
     .content {
       flex: 1;
       overflow: hidden;
@@ -156,35 +168,35 @@
       inset: 0;
       display: none;
       flex-direction: column;
+      transition: transform 0.25s ease;
     }
 
-    .panel.active {
-      display: flex;
-    }
+    .panel.active { display: flex; }
 
     /* ── Chat Panel ── */
     .chat-messages {
       flex: 1;
       overflow-y: auto;
-      padding: 20px;
+      -webkit-overflow-scrolling: touch;
+      padding: 16px;
+      padding-left: calc(16px + var(--safe-left));
+      padding-right: calc(16px + var(--safe-right));
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 12px;
     }
 
-    .chat-messages::-webkit-scrollbar { width: 6px; }
-    .chat-messages::-webkit-scrollbar-track { background: transparent; }
-    .chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .chat-messages::-webkit-scrollbar { width: 0; display: none; }
 
     .message {
       display: flex;
-      gap: 12px;
-      max-width: 780px;
+      gap: 10px;
+      max-width: 85%;
       animation: fadeIn 0.2s ease;
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
+      from { opacity: 0; transform: translateY(4px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
@@ -192,55 +204,49 @@
     .message.wiki { align-self: flex-start; }
 
     .msg-avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
+      width: 30px;
+      height: 30px;
+      border-radius: 15px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 14px;
+      font-size: 13px;
       flex-shrink: 0;
       font-weight: 700;
     }
 
-    .message.user .msg-avatar {
-      background: var(--accent);
-      color: #fff;
-    }
-
-    .message.wiki .msg-avatar {
-      background: var(--bg-tertiary);
-      color: var(--text-secondary);
-    }
+    .message.user .msg-avatar { background: var(--accent); color: #fff; }
+    .message.wiki .msg-avatar { background: var(--bg-tertiary); color: var(--text-secondary); }
 
     .msg-body {
       padding: 10px 14px;
-      border-radius: 12px;
-      font-size: 14px;
-      line-height: 1.6;
+      border-radius: 18px;
+      font-size: 15px;
+      line-height: 1.5;
       white-space: pre-wrap;
       word-break: break-word;
     }
 
     .message.user .msg-body {
-      background: var(--user-bubble);
-      border-bottom-right-radius: 4px;
+      background: var(--accent);
+      color: #fff;
+      border-bottom-right-radius: 6px;
     }
 
     .message.wiki .msg-body {
       background: var(--wiki-bubble);
       border: 1px solid var(--border);
-      border-bottom-left-radius: 4px;
+      border-bottom-left-radius: 6px;
     }
 
-    .msg-body code {
-      background: var(--bg-tertiary);
-      padding: 1px 5px;
-      border-radius: 4px;
-      font-size: 13px;
+    .msg-time {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      padding: 0 14px;
     }
 
-    .msg-body strong { color: var(--accent); font-weight: 600; }
+    .message.user .msg-time { text-align: right; }
 
     .chat-empty {
       flex: 1;
@@ -248,20 +254,25 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 12px;
+      gap: 10px;
       color: var(--text-muted);
+      padding: 40px 20px;
     }
 
-    .chat-empty-icon { font-size: 48px; opacity: 0.4; }
-    .chat-empty h3 { font-size: 18px; font-weight: 600; }
-    .chat-empty p { font-size: 13px; max-width: 340px; text-align: center; line-height: 1.5; }
+    .chat-empty-icon { font-size: 44px; opacity: 0.4; }
+    .chat-empty h3 { font-size: 17px; font-weight: 600; }
+    .chat-empty p { font-size: 14px; max-width: 300px; text-align: center; line-height: 1.5; }
 
+    /* ── Chat Input ── */
     .chat-input-bar {
-      padding: 12px 20px 16px;
+      padding: 8px 12px;
+      padding-bottom: calc(8px + var(--safe-bottom));
+      padding-left: calc(12px + var(--safe-left));
+      padding-right: calc(12px + var(--safe-right));
       background: var(--bg-secondary);
       border-top: 1px solid var(--border);
       display: flex;
-      gap: 10px;
+      gap: 8px;
       align-items: flex-end;
     }
 
@@ -269,27 +280,27 @@
       flex: 1;
       background: var(--bg-input);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 10px 14px;
+      border-radius: 20px;
+      padding: 10px 16px;
       color: var(--text-primary);
-      font-size: 14px;
+      font-size: 16px;
       font-family: inherit;
       resize: none;
-      min-height: 42px;
-      max-height: 160px;
-      line-height: 1.5;
+      min-height: 40px;
+      max-height: 120px;
+      line-height: 1.4;
       outline: none;
       transition: border-color 0.15s;
+      -webkit-appearance: none;
     }
 
     .chat-input:focus { border-color: var(--accent); }
-
     .chat-input::placeholder { color: var(--text-muted); }
 
     .send-btn {
-      width: 42px;
-      height: 42px;
-      border-radius: 12px;
+      width: 40px;
+      height: 40px;
+      border-radius: 20px;
       border: none;
       background: var(--accent);
       color: #fff;
@@ -298,173 +309,237 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.15s;
+      transition: all 0.15s;
       flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    .send-btn:hover { background: var(--accent-hover); }
-    .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .send-btn:active { transform: scale(0.92); }
+    .send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
     /* ── Add Panel ── */
     .add-panel {
-      padding: 24px;
+      padding: 16px;
+      padding-left: calc(16px + var(--safe-left));
+      padding-right: calc(16px + var(--safe-right));
+      padding-bottom: calc(16px + var(--safe-bottom));
       overflow-y: auto;
-      gap: 20px;
+      -webkit-overflow-scrolling: touch;
     }
 
     .add-section {
-      max-width: 680px;
+      max-width: 600px;
       margin: 0 auto;
       width: 100%;
     }
 
-    .add-section h2 {
-      font-size: 16px;
-      font-weight: 700;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .drop-zone {
-      border: 2px dashed var(--border);
-      border-radius: 12px;
-      padding: 40px 20px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s;
-      background: var(--bg-secondary);
-      margin-bottom: 20px;
-    }
-
-    .drop-zone:hover, .drop-zone.dragover {
-      border-color: var(--accent);
-      background: var(--bg-tertiary);
-    }
-
-    .drop-zone-icon { font-size: 36px; margin-bottom: 10px; opacity: 0.5; }
-    .drop-zone p { color: var(--text-secondary); font-size: 14px; }
-    .drop-zone .hint { color: var(--text-muted); font-size: 12px; margin-top: 6px; }
-
-    .paste-area {
-      width: 100%;
-      min-height: 200px;
-      background: var(--bg-input);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px;
-      color: var(--text-primary);
-      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-      font-size: 13px;
-      line-height: 1.6;
-      resize: vertical;
-      outline: none;
-      transition: border-color 0.15s;
-    }
-
-    .paste-area:focus { border-color: var(--accent); }
-    .paste-area::placeholder { color: var(--text-muted); }
-
-    .source-meta {
-      display: flex;
-      gap: 10px;
-      margin-top: 12px;
-      margin-bottom: 12px;
-    }
-
-    .source-meta input {
-      flex: 1;
-      background: var(--bg-input);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px 12px;
-      color: var(--text-primary);
-      font-size: 13px;
-      outline: none;
-      font-family: inherit;
-    }
-
-    .source-meta input:focus { border-color: var(--accent); }
-    .source-meta input::placeholder { color: var(--text-muted); }
-
-    .add-btn {
-      width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 10px;
-      background: var(--accent);
-      color: #fff;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.15s;
-      margin-top: 8px;
-    }
-
-    .add-btn:hover { background: var(--accent-hover); }
-    .add-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    /* ── Sources list ── */
-    .sources-list {
-      margin-top: 24px;
-    }
-
-    .sources-list h3 {
+    .section-label {
       font-size: 13px;
       font-weight: 600;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin-bottom: 10px;
+      margin-top: 20px;
     }
 
+    .section-label:first-child { margin-top: 0; }
+
+    /* Quick capture card */
+    .quick-capture {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .quick-capture textarea {
+      width: 100%;
+      min-height: 100px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      color: var(--text-primary);
+      font-size: 16px;
+      font-family: inherit;
+      line-height: 1.5;
+      resize: none;
+      outline: none;
+      -webkit-appearance: none;
+      transition: border-color 0.15s;
+    }
+
+    .quick-capture textarea:focus { border-color: var(--accent); }
+    .quick-capture textarea::placeholder { color: var(--text-muted); }
+
+    .meta-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .meta-row input {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: var(--text-primary);
+      font-size: 15px;
+      outline: none;
+      font-family: inherit;
+      -webkit-appearance: none;
+      min-width: 0;
+    }
+
+    .meta-row input:focus { border-color: var(--accent); }
+    .meta-row input::placeholder { color: var(--text-muted); }
+
+    .add-btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 12px;
+      -webkit-tap-highlight-color: transparent;
+      transition: all 0.15s;
+      min-height: 48px;
+    }
+
+    .add-btn:active { transform: scale(0.98); }
+    .add-btn:disabled { opacity: 0.4; }
+
+    /* File upload area */
+    .file-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 14px;
+      background: var(--bg-secondary);
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      color: var(--text-secondary);
+      font-size: 15px;
+      cursor: pointer;
+      min-height: 48px;
+      -webkit-tap-highlight-color: transparent;
+      transition: all 0.15s;
+    }
+
+    .file-btn:active { background: var(--bg-tertiary); }
+
+    /* ── Source list ── */
     .source-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 14px;
+      padding: 12px 14px;
       background: var(--bg-secondary);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      margin-bottom: 6px;
-      font-size: 13px;
+      border-radius: 12px;
+      margin-bottom: 8px;
       animation: fadeIn 0.2s ease;
+      min-height: 48px;
     }
 
-    .source-item .name {
+    .source-info { flex: 1; min-width: 0; }
+
+    .source-info .name {
       font-weight: 600;
-      color: var(--text-primary);
+      font-size: 15px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .source-item .date {
+    .source-info .meta {
+      font-size: 13px;
       color: var(--text-muted);
-      font-size: 12px;
+      margin-top: 2px;
     }
 
-    .source-item .status {
+    .source-actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+      margin-left: 10px;
+    }
+
+    .source-badge {
       font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 4px;
+      padding: 3px 8px;
+      border-radius: 6px;
       font-weight: 600;
-    }
-
-    .status.added {
       background: rgba(158, 206, 106, 0.15);
       color: var(--success);
     }
 
-    .status.pending {
-      background: rgba(224, 175, 104, 0.15);
-      color: var(--warning);
+    .delete-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
     }
 
-    /* ── Responsive ── */
-    @media (max-width: 640px) {
-      header { padding: 10px 14px; }
-      .chat-input-bar { padding: 10px 14px 14px; }
-      .add-panel { padding: 16px; }
-      .message { max-width: 100%; }
+    .delete-btn:active { background: rgba(247,118,142,0.15); color: var(--error); }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: calc(80px + var(--safe-bottom));
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      padding: 10px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      opacity: 0;
+      transition: all 0.3s ease;
+      pointer-events: none;
+      z-index: 100;
+      box-shadow: var(--shadow);
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    /* ── Desktop tweaks ── */
+    @media (min-width: 768px) {
+      .message { max-width: 65%; }
+      .chat-messages { padding: 20px 24px; }
+      .chat-input-bar { padding: 12px 20px 16px; }
+      .add-panel { padding: 24px; }
+      .chat-input { font-size: 15px; }
     }
   </style>
 </head>
@@ -477,58 +552,55 @@
     <div class="header-actions">
       <div class="tab-bar">
         <button class="tab-btn active" data-tab="chat">Chat</button>
-        <button class="tab-btn" data-tab="add">Add Source</button>
+        <button class="tab-btn" data-tab="add">Add</button>
+        <button class="tab-btn" data-tab="sources">Sources</button>
       </div>
-      <button class="theme-toggle" id="themeToggle" title="Toggle theme">&#9790;</button>
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">&#9790;</button>
     </div>
   </header>
 
-  <div class="content">
+  <div class="content" id="contentArea">
     <!-- Chat Panel -->
     <div class="panel active" id="panel-chat">
-      <div class="chat-messages" id="chatMessages">
-        <div class="chat-empty">
-          <div class="chat-empty-icon">&#128214;</div>
-          <h3>Query your wiki</h3>
-          <p>Ask questions about your sources. The wiki synthesizes answers from everything you've added.</p>
-        </div>
-      </div>
+      <div class="chat-messages" id="chatMessages"></div>
       <div class="chat-input-bar">
-        <textarea class="chat-input" id="chatInput" placeholder="Ask the wiki anything..." rows="1"></textarea>
-        <button class="send-btn" id="sendBtn" title="Send">&#10148;</button>
+        <textarea class="chat-input" id="chatInput" placeholder="Ask the wiki..." rows="1" enterkeyhint="send"></textarea>
+        <button class="send-btn" id="sendBtn" aria-label="Send">&#10148;</button>
       </div>
     </div>
 
-    <!-- Add Source Panel -->
+    <!-- Add Panel -->
     <div class="panel" id="panel-add">
       <div class="add-panel">
         <div class="add-section">
-          <h2>&#128196; Add a Source</h2>
-
-          <div class="drop-zone" id="dropZone">
-            <div class="drop-zone-icon">&#128193;</div>
-            <p>Drop a markdown file here</p>
-            <p class="hint">or click to browse</p>
-            <input type="file" id="fileInput" accept=".md,.txt,.html,.pdf" style="display:none">
+          <div class="section-label">Quick Capture</div>
+          <div class="quick-capture">
+            <textarea id="pasteArea" placeholder="Paste or type content..." rows="4"></textarea>
+            <div class="meta-row">
+              <input type="text" id="sourceTitle" placeholder="Title">
+              <input type="text" id="sourceTags" placeholder="Tags">
+            </div>
+            <button class="add-btn" id="addBtn">Add to Wiki</button>
           </div>
 
-          <h2>&#9998; Or paste content</h2>
-          <textarea class="paste-area" id="pasteArea" placeholder="Paste article text, notes, or any content here..."></textarea>
-
-          <div class="source-meta">
-            <input type="text" id="sourceTitle" placeholder="Source title (e.g., 'RAG Best Practices')">
-            <input type="text" id="sourceTags" placeholder="Tags (comma-separated)">
-          </div>
-
-          <button class="add-btn" id="addBtn">Add to Wiki</button>
-
-          <div class="sources-list" id="sourcesList">
-            <h3>Added Sources</h3>
-          </div>
+          <div class="section-label">From File</div>
+          <button class="file-btn" id="fileBtnTrigger">
+            <span>&#128206;</span> Choose file (.md, .txt, .html)
+          </button>
+          <input type="file" id="fileInput" accept=".md,.txt,.html" style="display:none">
         </div>
       </div>
     </div>
+
+    <!-- Sources Panel -->
+    <div class="panel" id="panel-sources">
+      <div class="add-panel">
+        <div class="add-section" id="sourcesContainer"></div>
+      </div>
+    </div>
   </div>
+
+  <div class="toast" id="toast"></div>
 
   <script>
     // ── State ──
@@ -542,6 +614,19 @@
       localStorage.setItem('wiki-messages', JSON.stringify(state.messages));
     }
 
+    // ── Toast ──
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    // ── PWA Service Worker ──
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+
     // ── Tabs ──
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -549,8 +634,38 @@
         document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
         btn.classList.add('active');
         document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+        if (btn.dataset.tab === 'sources') renderSources();
       });
     });
+
+    // ── Swipe between tabs ──
+    let touchStartX = 0;
+    const tabs = ['chat', 'add', 'sources'];
+    const contentArea = document.getElementById('contentArea');
+
+    contentArea.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+    }, { passive: true });
+
+    contentArea.addEventListener('touchend', (e) => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      if (Math.abs(dx) < 60) return;
+
+      const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
+      const idx = tabs.indexOf(activeTab);
+
+      let newIdx;
+      if (dx < 0 && idx < tabs.length - 1) newIdx = idx + 1;
+      else if (dx > 0 && idx > 0) newIdx = idx - 1;
+      else return;
+
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.tab === tabs[newIdx]);
+      });
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-' + tabs[newIdx]).classList.add('active');
+      if (tabs[newIdx] === 'sources') renderSources();
+    }, { passive: true });
 
     // ── Theme ──
     const html = document.documentElement;
@@ -563,6 +678,9 @@
       html.setAttribute('data-theme', next);
       localStorage.setItem('wiki-theme', next);
       updateThemeIcon();
+      // Update PWA theme-color
+      document.querySelector('meta[name="theme-color"][media*="dark"]')
+        ?.setAttribute('content', next === 'dark' ? '#1a1b26' : '#f5f5f5');
     });
 
     function updateThemeIcon() {
@@ -575,10 +693,9 @@
     const chatInput = document.getElementById('chatInput');
     const sendBtn = document.getElementById('sendBtn');
 
-    // Auto-resize textarea
     chatInput.addEventListener('input', () => {
       chatInput.style.height = 'auto';
-      chatInput.style.height = Math.min(chatInput.scrollHeight, 160) + 'px';
+      chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
     });
 
     chatInput.addEventListener('keydown', (e) => {
@@ -590,13 +707,18 @@
 
     sendBtn.addEventListener('click', sendMessage);
 
+    function formatTime(iso) {
+      const d = new Date(iso);
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
     function renderMessages() {
       if (state.messages.length === 0) {
         chatMessages.innerHTML = `
           <div class="chat-empty">
             <div class="chat-empty-icon">&#128214;</div>
             <h3>Query your wiki</h3>
-            <p>Ask questions about your sources. The wiki synthesizes answers from everything you've added.</p>
+            <p>Ask questions about your sources. Add content in the Add tab first.</p>
           </div>`;
         return;
       }
@@ -604,7 +726,10 @@
       chatMessages.innerHTML = state.messages.map(m => `
         <div class="message ${m.role}">
           <div class="msg-avatar">${m.role === 'user' ? 'Y' : 'W'}</div>
-          <div class="msg-body">${escapeHtml(m.text)}</div>
+          <div>
+            <div class="msg-body">${escapeHtml(m.text)}</div>
+            <div class="msg-time">${formatTime(m.time)}</div>
+          </div>
         </div>
       `).join('');
 
@@ -620,7 +745,6 @@
       chatInput.style.height = 'auto';
       renderMessages();
 
-      // Simulate wiki response — in production, this calls your LLM backend
       sendBtn.disabled = true;
       setTimeout(() => {
         const response = generateWikiResponse(text);
@@ -628,7 +752,7 @@
         save();
         renderMessages();
         sendBtn.disabled = false;
-      }, 600);
+      }, 400);
     }
 
     function generateWikiResponse(query) {
@@ -636,7 +760,7 @@
       const sourceCount = state.sources.length;
 
       if (sourceCount === 0) {
-        return "No sources in the wiki yet. Switch to the \"Add Source\" tab to add your first source, then I can answer questions about it.";
+        return 'No sources yet. Swipe right to the Add tab to add your first source.';
       }
 
       const titles = state.sources.map(s => s.title).join(', ');
@@ -647,132 +771,130 @@
       );
 
       if (matchedSource) {
-        const preview = matchedSource.content.substring(0, 300);
-        return `From source "${matchedSource.title}" (added ${matchedSource.date}):\n\n${preview}${matchedSource.content.length > 300 ? '...' : ''}\n\nTags: ${matchedSource.tags.join(', ') || 'none'}`;
+        const preview = matchedSource.content.substring(0, 400);
+        return `"${matchedSource.title}" (${matchedSource.date}):\n\n${preview}${matchedSource.content.length > 400 ? '...' : ''}\n\nTags: ${matchedSource.tags.join(', ') || 'none'}`;
       }
 
-      if (q.includes('list') || q.includes('what') || q.includes('sources')) {
-        return `The wiki currently contains ${sourceCount} source(s):\n\n${state.sources.map((s, i) => `${i + 1}. **${s.title}** — ${s.content.substring(0, 80)}... (${s.tags.join(', ') || 'untagged'})`).join('\n')}`;
+      if (q.includes('list') || q.includes('what') || q.includes('sources') || q.includes('all')) {
+        return `${sourceCount} source(s) in the wiki:\n\n${state.sources.map((s, i) => `${i + 1}. ${s.title} — ${s.content.substring(0, 60)}... [${s.tags.join(', ') || 'untagged'}]`).join('\n')}`;
       }
 
-      // Search across sources for relevant content
-      const relevant = state.sources.filter(s =>
-        q.split(' ').some(word =>
-          word.length > 3 && (
-            s.content.toLowerCase().includes(word) ||
-            s.title.toLowerCase().includes(word)
-          )
-        )
-      );
+      // Search across all sources
+      const words = q.split(/\s+/).filter(w => w.length > 2);
+      const scored = state.sources.map(s => {
+        const haystack = (s.title + ' ' + s.content + ' ' + s.tags.join(' ')).toLowerCase();
+        let score = 0;
+        for (const w of words) {
+          const idx = haystack.indexOf(w);
+          if (idx >= 0) score++;
+        }
+        return { source: s, score };
+      }).filter(x => x.score > 0).sort((a, b) => b.score - a.score);
 
-      if (relevant.length > 0) {
-        const excerpts = relevant.map(s => {
-          const words = q.split(' ').filter(w => w.length > 3);
+      if (scored.length > 0) {
+        const excerpts = scored.slice(0, 3).map(({ source: s }) => {
           let best = s.content.substring(0, 200);
-          for (const word of words) {
-            const idx = s.content.toLowerCase().indexOf(word);
+          for (const w of words) {
+            const idx = s.content.toLowerCase().indexOf(w);
             if (idx >= 0) {
-              const start = Math.max(0, idx - 80);
-              const end = Math.min(s.content.length, idx + 120);
+              const start = Math.max(0, idx - 60);
+              const end = Math.min(s.content.length, idx + 140);
               best = (start > 0 ? '...' : '') + s.content.substring(start, end) + (end < s.content.length ? '...' : '');
               break;
             }
           }
-          return `**${s.title}:**\n${best}`;
-        }).join('\n\n');
+          return `${s.title}:\n${best}`;
+        }).join('\n\n---\n\n');
 
-        return `Found relevant content in ${relevant.length} source(s):\n\n${excerpts}\n\n---\nConnect an LLM backend to get synthesized answers with full citations.`;
+        return `Found in ${scored.length} source(s):\n\n${excerpts}`;
       }
 
-      return `I searched ${sourceCount} source(s) (${titles}) but didn't find content directly matching your query.\n\nTry rephrasing, or add more sources to expand the wiki's knowledge.`;
+      return `No matches across ${sourceCount} source(s). Try different keywords or add more sources.`;
     }
 
     // ── Add Source ──
-    const dropZone = document.getElementById('dropZone');
-    const fileInput = document.getElementById('fileInput');
     const pasteArea = document.getElementById('pasteArea');
     const sourceTitle = document.getElementById('sourceTitle');
     const sourceTags = document.getElementById('sourceTags');
     const addBtn = document.getElementById('addBtn');
+    const fileInput = document.getElementById('fileInput');
+    const fileBtnTrigger = document.getElementById('fileBtnTrigger');
 
-    dropZone.addEventListener('click', () => fileInput.click());
-    dropZone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      dropZone.classList.add('dragover');
-    });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-    dropZone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropZone.classList.remove('dragover');
-      const file = e.dataTransfer.files[0];
-      if (file) loadFile(file);
-    });
+    fileBtnTrigger.addEventListener('click', () => fileInput.click());
 
     fileInput.addEventListener('change', () => {
-      if (fileInput.files[0]) loadFile(fileInput.files[0]);
-    });
-
-    function loadFile(file) {
+      const file = fileInput.files[0];
+      if (!file) return;
       const reader = new FileReader();
       reader.onload = (e) => {
         pasteArea.value = e.target.result;
         if (!sourceTitle.value) {
           sourceTitle.value = file.name.replace(/\.[^.]+$/, '');
         }
+        showToast('File loaded — edit and save');
       };
       reader.readAsText(file);
-    }
+      fileInput.value = '';
+    });
 
-    addBtn.addEventListener('click', addSource);
-
-    function addSource() {
+    addBtn.addEventListener('click', () => {
       const content = pasteArea.value.trim();
       const title = sourceTitle.value.trim();
 
-      if (!content) { pasteArea.focus(); return; }
-      if (!title) { sourceTitle.focus(); return; }
+      if (!content) { pasteArea.focus(); showToast('Add some content first'); return; }
+      if (!title) { sourceTitle.focus(); showToast('Give it a title'); return; }
 
       const tags = sourceTags.value.split(',').map(t => t.trim()).filter(Boolean);
       const date = new Date().toISOString().split('T')[0];
 
-      const source = {
+      state.sources.push({
         id: Date.now().toString(36),
         title,
         content,
         tags,
         date,
         filename: title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '') + '.md',
-      };
-
-      state.sources.push(source);
+      });
       save();
 
-      // Reset form
       pasteArea.value = '';
       sourceTitle.value = '';
       sourceTags.value = '';
 
-      renderSources();
-    }
+      showToast('Source added to wiki');
+    });
 
+    // ── Sources List ──
     function renderSources() {
-      const list = document.getElementById('sourcesList');
+      const container = document.getElementById('sourcesContainer');
+
       if (state.sources.length === 0) {
-        list.innerHTML = '<h3>Added Sources</h3><p style="color:var(--text-muted);font-size:13px;">No sources yet.</p>';
+        container.innerHTML = '<div class="empty-state">No sources yet. Add your first one in the Add tab.</div>';
         return;
       }
 
-      list.innerHTML = `<h3>Added Sources (${state.sources.length})</h3>` +
+      container.innerHTML =
+        `<div class="section-label">${state.sources.length} Source${state.sources.length !== 1 ? 's' : ''}</div>` +
         state.sources.slice().reverse().map(s => `
-          <div class="source-item">
-            <div>
-              <span class="name">${escapeHtml(s.title)}</span>
-              <span class="date"> &middot; ${s.date}</span>
+          <div class="source-item" data-id="${s.id}">
+            <div class="source-info">
+              <div class="name">${escapeHtml(s.title)}</div>
+              <div class="meta">${s.date}${s.tags.length ? ' · ' + s.tags.join(', ') : ''} · ${(s.content.length / 1000).toFixed(1)}k chars</div>
             </div>
-            <span class="status added">added</span>
+            <div class="source-actions">
+              <span class="source-badge">added</span>
+              <button class="delete-btn" onclick="deleteSource('${s.id}')" aria-label="Delete">&#10005;</button>
+            </div>
           </div>
         `).join('');
     }
+
+    window.deleteSource = function(id) {
+      state.sources = state.sources.filter(s => s.id !== id);
+      save();
+      renderSources();
+      showToast('Source removed');
+    };
 
     // ── Utils ──
     function escapeHtml(str) {
@@ -783,7 +905,15 @@
 
     // ── Init ──
     renderMessages();
-    renderSources();
+
+    // iOS keyboard handling — scroll chat to bottom when keyboard opens
+    if (/iPhone|iPad/.test(navigator.userAgent)) {
+      chatInput.addEventListener('focus', () => {
+        setTimeout(() => {
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        }, 300);
+      });
+    }
   </script>
 </body>
 </html>
