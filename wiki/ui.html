@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLM Wiki</title>
+  <style>
+    :root {
+      --bg-primary: #1a1b26;
+      --bg-secondary: #24283b;
+      --bg-tertiary: #2f3348;
+      --bg-input: #1e2030;
+      --text-primary: #c0caf5;
+      --text-secondary: #a9b1d6;
+      --text-muted: #565f89;
+      --accent: #7aa2f7;
+      --accent-hover: #89b4fa;
+      --border: #3b4261;
+      --success: #9ece6a;
+      --warning: #e0af68;
+      --error: #f7768e;
+      --user-bubble: #3b4261;
+      --wiki-bubble: #1e2030;
+      --shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    [data-theme="light"] {
+      --bg-primary: #f5f5f5;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #e8e8e8;
+      --bg-input: #ffffff;
+      --text-primary: #1a1b26;
+      --text-secondary: #4a5568;
+      --text-muted: #a0aec0;
+      --accent: #4a6cf7;
+      --accent-hover: #3b5ce5;
+      --border: #e2e8f0;
+      --success: #48bb78;
+      --warning: #ed8936;
+      --error: #fc5185;
+      --user-bubble: #e2e8f0;
+      --wiki-bubble: #f7fafc;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .logo-icon {
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: #fff;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── Tabs ── */
+    .tab-bar {
+      display: flex;
+      gap: 2px;
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+      padding: 3px;
+    }
+
+    .tab-btn {
+      padding: 6px 16px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tab-btn.active {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      box-shadow: var(--shadow);
+    }
+
+    .tab-btn:hover:not(.active) {
+      color: var(--text-secondary);
+    }
+
+    .theme-toggle {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: all 0.15s;
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ── Main content ── */
+    .content {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .panel {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+    }
+
+    .panel.active {
+      display: flex;
+    }
+
+    /* ── Chat Panel ── */
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .chat-messages::-webkit-scrollbar { width: 6px; }
+    .chat-messages::-webkit-scrollbar-track { background: transparent; }
+    .chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .message {
+      display: flex;
+      gap: 12px;
+      max-width: 780px;
+      animation: fadeIn 0.2s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user { align-self: flex-end; flex-direction: row-reverse; }
+    .message.wiki { align-self: flex-start; }
+
+    .msg-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      font-weight: 700;
+    }
+
+    .message.user .msg-avatar {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .message.wiki .msg-avatar {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+    }
+
+    .msg-body {
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .message.user .msg-body {
+      background: var(--user-bubble);
+      border-bottom-right-radius: 4px;
+    }
+
+    .message.wiki .msg-body {
+      background: var(--wiki-bubble);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+
+    .msg-body code {
+      background: var(--bg-tertiary);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    .msg-body strong { color: var(--accent); font-weight: 600; }
+
+    .chat-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: var(--text-muted);
+    }
+
+    .chat-empty-icon { font-size: 48px; opacity: 0.4; }
+    .chat-empty h3 { font-size: 18px; font-weight: 600; }
+    .chat-empty p { font-size: 13px; max-width: 340px; text-align: center; line-height: 1.5; }
+
+    .chat-input-bar {
+      padding: 12px 20px 16px;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    .chat-input {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 14px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: inherit;
+      resize: none;
+      min-height: 42px;
+      max-height: 160px;
+      line-height: 1.5;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .chat-input:focus { border-color: var(--accent); }
+
+    .chat-input::placeholder { color: var(--text-muted); }
+
+    .send-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+
+    .send-btn:hover { background: var(--accent-hover); }
+    .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Add Panel ── */
+    .add-panel {
+      padding: 24px;
+      overflow-y: auto;
+      gap: 20px;
+    }
+
+    .add-section {
+      max-width: 680px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .add-section h2 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--bg-secondary);
+      margin-bottom: 20px;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--accent);
+      background: var(--bg-tertiary);
+    }
+
+    .drop-zone-icon { font-size: 36px; margin-bottom: 10px; opacity: 0.5; }
+    .drop-zone p { color: var(--text-secondary); font-size: 14px; }
+    .drop-zone .hint { color: var(--text-muted); font-size: 12px; margin-top: 6px; }
+
+    .paste-area {
+      width: 100%;
+      min-height: 200px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      color: var(--text-primary);
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .paste-area:focus { border-color: var(--accent); }
+    .paste-area::placeholder { color: var(--text-muted); }
+
+    .source-meta {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+      margin-bottom: 12px;
+    }
+
+    .source-meta input {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: var(--text-primary);
+      font-size: 13px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .source-meta input:focus { border-color: var(--accent); }
+    .source-meta input::placeholder { color: var(--text-muted); }
+
+    .add-btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-top: 8px;
+    }
+
+    .add-btn:hover { background: var(--accent-hover); }
+    .add-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Sources list ── */
+    .sources-list {
+      margin-top: 24px;
+    }
+
+    .sources-list h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+
+    .source-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 6px;
+      font-size: 13px;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .source-item .name {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .source-item .date {
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .source-item .status {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .status.added {
+      background: rgba(158, 206, 106, 0.15);
+      color: var(--success);
+    }
+
+    .status.pending {
+      background: rgba(224, 175, 104, 0.15);
+      color: var(--warning);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      header { padding: 10px 14px; }
+      .chat-input-bar { padding: 10px 14px 14px; }
+      .add-panel { padding: 16px; }
+      .message { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <div class="logo-icon">W</div>
+      <span>LLM Wiki</span>
+    </div>
+    <div class="header-actions">
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="chat">Chat</button>
+        <button class="tab-btn" data-tab="add">Add Source</button>
+      </div>
+      <button class="theme-toggle" id="themeToggle" title="Toggle theme">&#9790;</button>
+    </div>
+  </header>
+
+  <div class="content">
+    <!-- Chat Panel -->
+    <div class="panel active" id="panel-chat">
+      <div class="chat-messages" id="chatMessages">
+        <div class="chat-empty">
+          <div class="chat-empty-icon">&#128214;</div>
+          <h3>Query your wiki</h3>
+          <p>Ask questions about your sources. The wiki synthesizes answers from everything you've added.</p>
+        </div>
+      </div>
+      <div class="chat-input-bar">
+        <textarea class="chat-input" id="chatInput" placeholder="Ask the wiki anything..." rows="1"></textarea>
+        <button class="send-btn" id="sendBtn" title="Send">&#10148;</button>
+      </div>
+    </div>
+
+    <!-- Add Source Panel -->
+    <div class="panel" id="panel-add">
+      <div class="add-panel">
+        <div class="add-section">
+          <h2>&#128196; Add a Source</h2>
+
+          <div class="drop-zone" id="dropZone">
+            <div class="drop-zone-icon">&#128193;</div>
+            <p>Drop a markdown file here</p>
+            <p class="hint">or click to browse</p>
+            <input type="file" id="fileInput" accept=".md,.txt,.html,.pdf" style="display:none">
+          </div>
+
+          <h2>&#9998; Or paste content</h2>
+          <textarea class="paste-area" id="pasteArea" placeholder="Paste article text, notes, or any content here..."></textarea>
+
+          <div class="source-meta">
+            <input type="text" id="sourceTitle" placeholder="Source title (e.g., 'RAG Best Practices')">
+            <input type="text" id="sourceTags" placeholder="Tags (comma-separated)">
+          </div>
+
+          <button class="add-btn" id="addBtn">Add to Wiki</button>
+
+          <div class="sources-list" id="sourcesList">
+            <h3>Added Sources</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── State ──
+    const state = {
+      sources: JSON.parse(localStorage.getItem('wiki-sources') || '[]'),
+      messages: JSON.parse(localStorage.getItem('wiki-messages') || '[]'),
+    };
+
+    function save() {
+      localStorage.setItem('wiki-sources', JSON.stringify(state.sources));
+      localStorage.setItem('wiki-messages', JSON.stringify(state.messages));
+    }
+
+    // ── Tabs ──
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    // ── Theme ──
+    const html = document.documentElement;
+    const savedTheme = localStorage.getItem('wiki-theme') || 'dark';
+    html.setAttribute('data-theme', savedTheme);
+    updateThemeIcon();
+
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('wiki-theme', next);
+      updateThemeIcon();
+    });
+
+    function updateThemeIcon() {
+      document.getElementById('themeToggle').innerHTML =
+        html.getAttribute('data-theme') === 'dark' ? '&#9788;' : '&#9790;';
+    }
+
+    // ── Chat ──
+    const chatMessages = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
+
+    // Auto-resize textarea
+    chatInput.addEventListener('input', () => {
+      chatInput.style.height = 'auto';
+      chatInput.style.height = Math.min(chatInput.scrollHeight, 160) + 'px';
+    });
+
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    sendBtn.addEventListener('click', sendMessage);
+
+    function renderMessages() {
+      if (state.messages.length === 0) {
+        chatMessages.innerHTML = `
+          <div class="chat-empty">
+            <div class="chat-empty-icon">&#128214;</div>
+            <h3>Query your wiki</h3>
+            <p>Ask questions about your sources. The wiki synthesizes answers from everything you've added.</p>
+          </div>`;
+        return;
+      }
+
+      chatMessages.innerHTML = state.messages.map(m => `
+        <div class="message ${m.role}">
+          <div class="msg-avatar">${m.role === 'user' ? 'Y' : 'W'}</div>
+          <div class="msg-body">${escapeHtml(m.text)}</div>
+        </div>
+      `).join('');
+
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function sendMessage() {
+      const text = chatInput.value.trim();
+      if (!text) return;
+
+      state.messages.push({ role: 'user', text, time: new Date().toISOString() });
+      chatInput.value = '';
+      chatInput.style.height = 'auto';
+      renderMessages();
+
+      // Simulate wiki response — in production, this calls your LLM backend
+      sendBtn.disabled = true;
+      setTimeout(() => {
+        const response = generateWikiResponse(text);
+        state.messages.push({ role: 'wiki', text: response, time: new Date().toISOString() });
+        save();
+        renderMessages();
+        sendBtn.disabled = false;
+      }, 600);
+    }
+
+    function generateWikiResponse(query) {
+      const q = query.toLowerCase();
+      const sourceCount = state.sources.length;
+
+      if (sourceCount === 0) {
+        return "No sources in the wiki yet. Switch to the \"Add Source\" tab to add your first source, then I can answer questions about it.";
+      }
+
+      const titles = state.sources.map(s => s.title).join(', ');
+
+      // Check if query mentions a specific source
+      const matchedSource = state.sources.find(s =>
+        q.includes(s.title.toLowerCase())
+      );
+
+      if (matchedSource) {
+        const preview = matchedSource.content.substring(0, 300);
+        return `From source "${matchedSource.title}" (added ${matchedSource.date}):\n\n${preview}${matchedSource.content.length > 300 ? '...' : ''}\n\nTags: ${matchedSource.tags.join(', ') || 'none'}`;
+      }
+
+      if (q.includes('list') || q.includes('what') || q.includes('sources')) {
+        return `The wiki currently contains ${sourceCount} source(s):\n\n${state.sources.map((s, i) => `${i + 1}. **${s.title}** — ${s.content.substring(0, 80)}... (${s.tags.join(', ') || 'untagged'})`).join('\n')}`;
+      }
+
+      // Search across sources for relevant content
+      const relevant = state.sources.filter(s =>
+        q.split(' ').some(word =>
+          word.length > 3 && (
+            s.content.toLowerCase().includes(word) ||
+            s.title.toLowerCase().includes(word)
+          )
+        )
+      );
+
+      if (relevant.length > 0) {
+        const excerpts = relevant.map(s => {
+          const words = q.split(' ').filter(w => w.length > 3);
+          let best = s.content.substring(0, 200);
+          for (const word of words) {
+            const idx = s.content.toLowerCase().indexOf(word);
+            if (idx >= 0) {
+              const start = Math.max(0, idx - 80);
+              const end = Math.min(s.content.length, idx + 120);
+              best = (start > 0 ? '...' : '') + s.content.substring(start, end) + (end < s.content.length ? '...' : '');
+              break;
+            }
+          }
+          return `**${s.title}:**\n${best}`;
+        }).join('\n\n');
+
+        return `Found relevant content in ${relevant.length} source(s):\n\n${excerpts}\n\n---\nConnect an LLM backend to get synthesized answers with full citations.`;
+      }
+
+      return `I searched ${sourceCount} source(s) (${titles}) but didn't find content directly matching your query.\n\nTry rephrasing, or add more sources to expand the wiki's knowledge.`;
+    }
+
+    // ── Add Source ──
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const pasteArea = document.getElementById('pasteArea');
+    const sourceTitle = document.getElementById('sourceTitle');
+    const sourceTags = document.getElementById('sourceTags');
+    const addBtn = document.getElementById('addBtn');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) loadFile(file);
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files[0]) loadFile(fileInput.files[0]);
+    });
+
+    function loadFile(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        pasteArea.value = e.target.result;
+        if (!sourceTitle.value) {
+          sourceTitle.value = file.name.replace(/\.[^.]+$/, '');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    addBtn.addEventListener('click', addSource);
+
+    function addSource() {
+      const content = pasteArea.value.trim();
+      const title = sourceTitle.value.trim();
+
+      if (!content) { pasteArea.focus(); return; }
+      if (!title) { sourceTitle.focus(); return; }
+
+      const tags = sourceTags.value.split(',').map(t => t.trim()).filter(Boolean);
+      const date = new Date().toISOString().split('T')[0];
+
+      const source = {
+        id: Date.now().toString(36),
+        title,
+        content,
+        tags,
+        date,
+        filename: title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '') + '.md',
+      };
+
+      state.sources.push(source);
+      save();
+
+      // Reset form
+      pasteArea.value = '';
+      sourceTitle.value = '';
+      sourceTags.value = '';
+
+      renderSources();
+    }
+
+    function renderSources() {
+      const list = document.getElementById('sourcesList');
+      if (state.sources.length === 0) {
+        list.innerHTML = '<h3>Added Sources</h3><p style="color:var(--text-muted);font-size:13px;">No sources yet.</p>';
+        return;
+      }
+
+      list.innerHTML = `<h3>Added Sources (${state.sources.length})</h3>` +
+        state.sources.slice().reverse().map(s => `
+          <div class="source-item">
+            <div>
+              <span class="name">${escapeHtml(s.title)}</span>
+              <span class="date"> &middot; ${s.date}</span>
+            </div>
+            <span class="status added">added</span>
+          </div>
+        `).join('');
+    }
+
+    // ── Utils ──
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // ── Init ──
+    renderMessages();
+    renderSources();
+  </script>
+</body>
+</html>
